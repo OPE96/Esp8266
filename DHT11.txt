@@ -1,0 +1,217 @@
+#include <iostream>
+#include <cstring>
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+#include <DHT_U.h>
+#define DHTTYPE DHT11
+#define DHTPIN 3 
+
+DHT_Unified dht(DHTPIN, DHTTYPE);
+
+
+
+/*
+  Replace the SSID and Password according to your wifi
+*/
+//String ssid_1;//"Ope"; //"SKYRCAXI";  
+//String password_1; //"Turd1996"; //"ZgjBBKazUi1k";
+
+const char *ssid;
+const char *password;
+
+
+// Your MQTT broker ID
+//"192.168.43.110"; // 192.168.43.110- andriod home=192.168.0.19
+const char *mqttBroker;
+const int mqttPort = 1883;
+// MQTT topics
+const char *publishTopic = "sensorReadings";
+const char *subscribeTopic = "sampletopic";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+unsigned long lastMsg = 0;
+const int READ_CYCLE_TIME = 3000;
+String options;
+void serial_read(){
+  Serial.print("Base: ");
+  while (options.length() == 0){
+  options = Serial.readStringUntil('\n');
+  Serial.println(options);
+  }
+
+}
+void serial_printdetails(){
+  Serial.println("-------------------------"); //Showing the details  
+  Serial.print("YOUR WIFI NAME:");  
+  Serial.println(ssid);
+  Serial.print("YOUR Pass:");  
+  Serial.println(password);
+  Serial.print("YOUR Broker IP:");  
+  Serial.println(mqttBroker);
+  Serial.println("");
+}
+void Details_user()
+{
+  String opt_1 =  "WIFI";
+  String opt_2 = "PHONE";
+ 
+  serial_read();
+  int result_1 = options.compareTo(opt_1); 
+  int result_2 = options.compareTo(opt_2); 
+
+  if (result_1 == 0 ){
+    Serial.println("Using WI-FI");
+    ssid = "SKYRCAXI";
+    password = "ZgjBBKazUi1k";
+    mqttBroker = "192.168.0.19";
+    serial_printdetails();
+  }
+  if(result_2 == 0){
+    Serial.println("Using Andriod");
+    ssid = "Ope";
+    password = "Turd1996";
+    mqttBroker = "192.168.43.110";
+    serial_printdetails();
+  }
+  delay(100);  
+}
+
+// Connect to Wifi
+void setup_wifi()
+{
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+
+    Serial.println("Initial Wi-Fi not available, attempting to connect to alternate Wi-Fi");
+    delay(500);
+    Serial.print(".");
+  }
+
+  randomSeed(micros());
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+// Callback function whenever an MQTT message is received
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  String message;
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print(message += (char)payload[i]);
+  }
+  Serial.println();
+}
+
+void reconnect()
+{
+  // Loop until we're reconnected
+  while (!client.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+
+    // Create a random client ID
+    String clientId = "ESP32Client-";
+    clientId += String(random(0xffff), HEX);
+
+    // Attempt to connect
+    if (client.connect(clientId.c_str()))
+    {
+      Serial.println("connected");
+      // Subscribe to topic
+      // client.subscribe(subscribeTopic);
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
+
+void setup()
+{
+  Serial.begin(115200);
+
+  Details_user();
+  // Setup the wifi
+  setup_wifi();
+  
+  dht.begin();
+
+
+  // setup the mqtt server and callback
+  client.setServer(mqttBroker, mqttPort);
+
+  client.setCallback(callback);
+}
+
+void loop()
+{
+  // Listen for mqtt message and reconnect if disconnected
+  if (!client.connected())
+  {
+    reconnect();
+  }
+  client.loop();
+
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
+  dht.humidity().getEvent(&event);
+
+  // publish BME280 sensor readings periodically
+  unsigned long now = millis();
+  if (now - lastMsg > READ_CYCLE_TIME)
+  {
+    lastMsg = now;
+
+    //  Publish MQTT messages
+    char buffer[256];
+    StaticJsonDocument<96> doc;
+    doc["temperature"] =  dht.temperature();
+    doc["humidity"] =  event.relative_humidity;
+    doc["Light"] = analogRead(A0);
+    size_t n = serializeJson(doc, buffer);
+    client.publish(publishTopic, buffer, n);
+  }
+}
+
+
+
+
+
+[env:esp32dev]
+platform = espressif8266
+board = nodemcuv2
+framework = arduino
+monitor_speed = 115200
+lib_deps = 
+	adafruit/Adafruit BME280 Library@^2.2.2
+	bblanchon/ArduinoJson@^6.20.0
+	knolleary/PubSubClient@^2.8
+    adafruit/DHT sensor library @ ^1.4.4

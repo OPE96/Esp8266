@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sensor Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <style>
+    /* Add any custom CSS styles here */
+    canvas {
+      max-width: 280px;
+      margin-top: 20px;
+      max-height: 280px;
+    }
+  </style>
+  <script>
+    const socket = io();
+
+    // Update the sensor data on the dashboard
+    socket.on('sensorReadings', (data) => {
+      document.getElementById('temperature').textContent = data.temperature;
+      document.getElementById('humidity').textContent = data.humidity;
+      document.getElementById('pressure').textContent = data.pressure;
+      document.getElementById('Light').textContent = data.Light;
+
+    });
+  </script>
+</head>
+<body>
+  <div class = "jumbotron text-center">
+    <h1>Weather Station Dashboard</h1>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-4">
+        <h3>Temperature</h3>
+        <p>Temperature Value: <span id="temperature">-</span> °C</p>
+        <canvas id="chart"></canvas>
+
+        <script type="text/javascript">
+          // Initialize an empty array to hold the sensor readings
+          let sensorReadings = []; 
+          // Initialize the chart
+          const chartCanvas = document.getElementById('chart');
+          const chart = new Chart(chartCanvas, {
+            type: 'line',
+            data: {
+              labels: [], // Array to hold the x-axis labels
+              datasets: [
+                {
+                  label: 'Temp Chart',
+                  data: sensorReadings, // Use the sensor readings array
+                  borderColor: 'red',
+                  fill: false,
+                  pointRadius: 1.5
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                      display: true,
+                      text: 'Temperature °C',
+                      font:{
+                          weight:'bold'
+                      }
+                  }
+                }
+              }
+            }
+          
+          });
+      
+          // Update the chart with new sensor readings
+          function updateChart(value) {
+            const timestamp = new Date().toLocaleTimeString();
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(value);
+            chart.update();
+          }
+      
+          // Connect to the server via Socket.IO
+          const socket1 = io();
+      
+          // Receive the sensor readings from the server
+          socket1.on('sensorReadings', (data) => {
+            const temperature = data.temperature; // Assuming the temperature reading is available in the 'data' object
+            sensorReadings.push(temperature);
+            updateChart(temperature);
+          });
+      
+        </script>
+</div>
+  
+<div class="col-sm-4">
+  <h3>Humidity</h3>
+  <p>Humidity: <span id="humidity">-</span> %</p>
+  <canvas id="chart1"></canvas>
+  <script type="text/javascript">
+    // Initialize an empty array to hold the sensor readings
+    let sensorReadings1= [];
+
+    // Initialize the chart
+    const chart1Canvas = document.getElementById('chart1');
+    const chart1 = new Chart(chart1Canvas, {
+            type: 'line',
+            data: {
+              labels: [], // Array to hold the x-axis labels
+              datasets: [
+                {
+                  label: 'Humidity Chart',
+                  data: sensorReadings1, // Use the sensor readings array
+                  borderColor: 'orange',
+                  fill: false,
+                  pointRadius: 1.5
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                      display: true,
+                      text: 'Humidity %',
+                      font:{
+                          weight:'bold'
+                      }
+                  }
+                }
+              }
+            }      
+          });
+    function updateChart1(value1) {
+      const timestamp1 = new Date().toLocaleTimeString();
+      chart1.data.labels.push(timestamp1);
+      chart1.data.datasets[0].data.push(value1);
+      chart1.update();
+    }
+
+    // Connect to the server via Socket.IO
+     const socket2 = io();
+      
+      // Receive the sensor readings from the server
+      socket2.on('sensorReadings', (data) => {
+        const humidity = data.humidity; // Assuming the temperature reading is available in the 'data' object
+        sensorReadings1.push(humidity);
+        updateChart1(humidity);
+      });
+    
+  </script>
+</div>
+
+<div class="col-sm-4">
+  <h3>Pressure</h3>
+  <p>Pressure: <span id="pressure">-</span> hPa</p>
+  <canvas id="chart2"></canvas>
+  <script type="text/javascript">
+    // Initialize an empty array to hold the sensor readings
+    let sensorReadings2= [];
+
+    // Initialize the chart
+    const chart2Canvas = document.getElementById('chart2');
+    const chart2 = new Chart(chart2Canvas, {
+            type: 'line',
+            data: {
+              labels: [], // Array to hold the x-axis labels
+              datasets: [
+                {
+                  label: 'Pressure Chart',
+                  data: sensorReadings2, // Use the sensor readings array
+                  borderColor: 'purple',
+                  fill: false,
+                  pointRadius: 1.5
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                      display: true,
+                      text: 'Pressure (hPa)',
+                      font:{
+                          weight:'bold'
+                      }
+                  }
+                }
+              }
+            }      
+          });
+    function updateChart2(value2) {
+      const timestamp2 = new Date().toLocaleTimeString();
+      chart2.data.labels.push(timestamp2);
+      chart2.data.datasets[0].data.push(value2);
+      chart2.update();
+    }
+
+    // Connect to the server via Socket.IO
+     const socket3 = io();
+      
+      // Receive the sensor readings from the server
+      socket3.on('sensorReadings', (data) => {
+        const Pressure = data.pressure; // Assuming the temperature reading is available in the 'data' object
+        sensorReadings2.push(Pressure);
+        updateChart2(Pressure);
+      });
+    
+  </script>
+</div>
+
+<div class="col-sm-4">
+  <h3>Light Intensity</h3>
+  <p>Intensity: <span id="Light">-</span> Lux</p>
+  <canvas id="chart4"></canvas>
+  <script type="text/javascript">
+    // Initialize an empty array to hold the sensor readings
+    let sensorReadings4= [];
+
+    // Initialize the chart
+    const chart4Canvas = document.getElementById('chart4');
+    const chart4 = new Chart(chart4Canvas, {
+            type: 'line',
+            data: {
+              labels: [], // Array to hold the x-axis labels
+              datasets: [
+                {
+                  label: 'Intensity Chart',
+                  data: sensorReadings4, // Use the sensor readings array
+                  borderColor: 'yellow',
+                  fill: false,
+                  pointRadius: 1.5
+
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                      display: true,
+                      text: 'Light Intensity (Lux)',
+                      font:{
+                          weight:'bold'
+                      }
+                  }
+                }
+              }
+            }      
+          });
+    function updateChart4(value4) {
+      const timestamp4 = new Date().toLocaleTimeString();
+      chart4.data.labels.push(timestamp4);
+      chart4.data.datasets[0].data.push(value4);
+      chart4.update();
+    }
+    // Connect to the server via Socket.IO
+     const socket5 = io();
+      // Receive the sensor readings from the server
+      socket5.on('sensorReadings', (data) => {
+        const Light = data.light; // Assuming the temperature reading is available in the 'data' object
+        sensorReadings4.push(Light);
+        updateChart4(Light);
+      });
+    </script>
+</div>
+
+</body>
+</html>
