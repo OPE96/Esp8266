@@ -4,7 +4,7 @@ const express = require('express');
 const mqtt = require('mqtt');
 
 const app = express();
-const mqttClient = mqtt.connect('mqtt://192.168.43.110');
+const mqttClient = mqtt.connect('mqtt://192.168.0.19');
 
 // MQTT topic to subscribe to
 const mqttTopic = 'sensorReadings';

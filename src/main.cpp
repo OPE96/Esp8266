@@ -33,6 +33,4 @@ void loop()
 
   // publish BME280 sensor readings periodically
   pub_data();
-
- 
 }
